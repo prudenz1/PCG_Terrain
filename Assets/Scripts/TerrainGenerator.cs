@@ -26,6 +26,7 @@ public class TerrainGenerator : MonoBehaviour
     [SerializeField] TerrainBiomePainter biomePainter;
 
     public HeightMapData CurrentHeightMap { get; private set; }
+    public Terrain Terrain => terrain;
     public int Seed => seed;
 
     public void SetSeed(int newSeed) => seed = newSeed;
