@@ -1,4 +1,4 @@
-﻿# PCG_Terrain (PCG_map)
+# PCG_Terrain (PCG_map)
 
 Unity project (Unity 6.3 LTS, URP): procedural open terrain with a Perlin/FBM heightmap.
 
@@ -10,7 +10,7 @@ Repository: [github.com/prudenz1/PCG_Terrain](https://github.com/prudenz1/PCG_Te
 
 **Perlin Noise + FBM (fractal Brownian motion)** → heightmap → Unity Terrain.
 
-1. Build a esolution × resolution height grid.
+1. Build a `resolution × resolution` height grid.
 2. For each (x, z): sum octaves of Perlin noise (frequency / persistence / lacunarity).
 3. Normalize heights to `[0..1]`, scale by `heightScale`.
 4. Apply via `TerrainData.SetHeights`.
@@ -31,5 +31,5 @@ Same `seed` → same terrain.
 
 ## Unity
 
-- Open `Project1/PCG_map` (this repo root) in Unity 6.3 LTS.
+- Open this repo root in Unity 6.3 LTS.
 - Scene: `Assets/Scenes/SampleScene.unity`
