@@ -7,8 +7,11 @@ public class TerrainGenerator : MonoBehaviour
 {
     [Header("Terrain")]
     [SerializeField] Terrain terrain;
-    [Tooltip("Must be 2^n + 1 (e.g. 129, 257).")]
-    [SerializeField] int heightmapResolution = 129;
+    [Tooltip("Used when Auto Resolution is off. Must be 2^n + 1 (e.g. 129, 257, 1025).")]
+    [SerializeField] int heightmapResolution = 257;
+    [SerializeField] bool autoResolution = true;
+    [Tooltip("Target meters per height sample when Auto Resolution is on. Lower = sharper, slower.")]
+    [SerializeField] [Range(2f, 40f)] float metersPerSample = 8f;
     [SerializeField] float worldSize = 200f;
     [SerializeField] float heightScale = 40f;
 
@@ -63,7 +66,7 @@ public class TerrainGenerator : MonoBehaviour
 
     HeightMapData BuildHeightMap()
     {
-        int res = NormalizeResolution(heightmapResolution);
+        int res = ResolveHeightmapResolution();
         heightmapResolution = res;
 
         var map = new HeightMapData(res);
@@ -105,10 +108,23 @@ public class TerrainGenerator : MonoBehaviour
         return map;
     }
 
+    int ResolveHeightmapResolution()
+    {
+        if (!autoResolution)
+            return NormalizeResolution(heightmapResolution);
+
+        // Keep detail when World Size grows (129 over 10k looks soapy)
+        int target = Mathf.RoundToInt(worldSize / Mathf.Max(1f, metersPerSample)) + 1;
+        return NormalizeResolution(Mathf.Clamp(target, 129, 2049));
+    }
+
     void ApplyToTerrain(HeightMapData map)
     {
         TerrainData data = terrain.terrainData;
         data.heightmapResolution = map.Resolution;
+        // Alphamap must track height detail or biomes blur across huge worlds
+        int alphaRes = Mathf.ClosestPowerOfTwo(Mathf.Max(64, map.Resolution - 1));
+        data.alphamapResolution = Mathf.Clamp(alphaRes, 64, 2048);
         data.size = new Vector3(worldSize, heightScale, worldSize);
         data.SetHeights(0, 0, map.Heights);
         terrain.transform.position = Vector3.zero;
@@ -133,7 +149,7 @@ public class TerrainGenerator : MonoBehaviour
 
     static int NormalizeResolution(int resolution)
     {
-        int[] allowed = { 33, 65, 129, 257, 513, 1025 };
+        int[] allowed = { 33, 65, 129, 257, 513, 1025, 2049, 4097 };
         int best = allowed[0];
         int bestDist = Mathf.Abs(resolution - best);
         foreach (int a in allowed)

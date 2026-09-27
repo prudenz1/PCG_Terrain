@@ -1493,10 +1493,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TerrainGenerator
   terrain: {fileID: 532268706}
   heightmapResolution: 129
-  worldSize: 400
-  heightScale: 60
+  autoResolution: 1
+  metersPerSample: 8
+  worldSize: 10000
+  heightScale: 80
   seed: 34222
-  octaves: 8
+  octaves: 5
   frequency: 0.005
   persistence: 0.5
   lacunarity: 2
@@ -1515,16 +1517,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TerrainBiomePainter
   paintOnGenerate: 1
   waterMax: 0.28
-  sandMax: 0.38
-  grassMax: 0.7
-  snowMin: 0.88
+  sandShoreWidth: 0.0249
+  grassMax: 0.584
+  snowMin: 0.872
   waterColor: {r: 0.15, g: 0.35, b: 0.75, a: 1}
   sandColor: {r: 0.76, g: 0.7, b: 0.45, a: 1}
   grassColor: {r: 0.25, g: 0.55, b: 0.22, a: 1}
   rockColor: {r: 0.45, g: 0.45, b: 0.48, a: 1}
   snowColor: {r: 0.92, g: 0.94, b: 0.96, a: 1}
-  useSlopeForRock: 1
-  steepRockStrength: 0.65
 --- !u!1 &1292996769
 GameObject:
   m_ObjectHideFlags: 0
@@ -1881,8 +1881,8 @@ MonoBehaviour:
   player: {fileID: 1456890031}
   randomizeSeedOnStart: 1
   seedInput: {fileID: 1146221539}
-  regenerateButton: {fileID: 1292996771}
   randomButton: {fileID: 228591699}
+  regenerateButton: {fileID: 1292996771}
 --- !u!1 &2077742862
 GameObject:
   m_ObjectHideFlags: 0

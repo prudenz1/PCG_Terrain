@@ -4,8 +4,8 @@ using UnityEditor;
 #endif
 
 /// <summary>
-/// Paints TerrainLayers by height (and optional slope):
-/// low = water / river, then sand, grass, rock, snow on peaks.
+/// Paints TerrainLayers by height:
+/// low = water / river, then sand shore, grass, rock, snow on peaks.
 /// Layers are saved under Assets/TerrainLayers so they are not "Missing" after Play.
 /// </summary>
 public class TerrainBiomePainter : MonoBehaviour
@@ -16,7 +16,8 @@ public class TerrainBiomePainter : MonoBehaviour
 
     [Header("Height thresholds (0..1 normalized height)")]
     [SerializeField] [Range(0f, 1f)] float waterMax = 0.28f;
-    [SerializeField] [Range(0f, 1f)] float sandMax = 0.38f;
+    [Tooltip("How wide the sand beach is above the water line (not a second biome band).")]
+    [SerializeField] [Range(0.005f, 0.12f)] float sandShoreWidth = 0.035f;
     [SerializeField] [Range(0f, 1f)] float grassMax = 0.70f;
     [SerializeField] [Range(0f, 1f)] float snowMin = 0.88f;
 
@@ -26,10 +27,6 @@ public class TerrainBiomePainter : MonoBehaviour
     [SerializeField] Color grassColor = new Color(0.25f, 0.55f, 0.22f);
     [SerializeField] Color rockColor = new Color(0.45f, 0.45f, 0.48f);
     [SerializeField] Color snowColor = new Color(0.92f, 0.94f, 0.96f);
-
-    [Header("Slope → more rock")]
-    [SerializeField] bool useSlopeForRock = true;
-    [SerializeField] [Range(0f, 1f)] float steepRockStrength = 0.65f;
 
     const int Water = 0;
     const int Sand = 1;
@@ -60,15 +57,8 @@ public class TerrainBiomePainter : MonoBehaviour
                 float u = x / (float)(alphaRes - 1);
                 float v = z / (float)(alphaRes - 1);
                 float h = SampleHeightBilinear(heightMap, u, v);
-                float slope = useSlopeForRock ? SampleSlope(heightMap, u, v) : 0f;
 
                 float[] w = WeightsForHeight(h);
-                if (useSlopeForRock && slope > 0.35f)
-                {
-                    float rockBoost = Mathf.InverseLerp(0.35f, 0.85f, slope) * steepRockStrength;
-                    BoostRock(w, rockBoost);
-                }
-
                 Normalize(w);
                 for (int i = 0; i < LayerCount; i++)
                     map[z, x, i] = w[i];
@@ -81,27 +71,16 @@ public class TerrainBiomePainter : MonoBehaviour
 
     float[] WeightsForHeight(float h)
     {
+        // Sand = thin shoreline only, right above water (not a wide lowland biome)
+        float sandEnd = Mathf.Min(waterMax + sandShoreWidth, grassMax - 0.02f);
+
         float[] w = new float[LayerCount];
-        w[Water] = 1f - SmoothStep(waterMax - 0.06f, waterMax + 0.02f, h);
-        w[Sand] = Band(h, waterMax - 0.04f, waterMax, sandMax, sandMax + 0.06f);
-        w[Grass] = Band(h, sandMax - 0.04f, sandMax, grassMax, grassMax + 0.08f);
+        w[Water] = 1f - SmoothStep(waterMax - 0.04f, waterMax + 0.01f, h);
+        w[Sand] = Band(h, waterMax - 0.01f, waterMax, sandEnd, sandEnd + 0.015f);
+        w[Grass] = Band(h, sandEnd - 0.01f, sandEnd, grassMax, grassMax + 0.08f);
         w[Rock] = Band(h, grassMax - 0.06f, grassMax, snowMin, snowMin + 0.05f);
         w[Snow] = SmoothStep(snowMin - 0.04f, snowMin + 0.02f, h);
         return w;
-    }
-
-    static void BoostRock(float[] w, float amount)
-    {
-        float take = 0f;
-        for (int i = 0; i < LayerCount; i++)
-        {
-            if (i == Rock) continue;
-            float remove = w[i] * amount;
-            w[i] -= remove;
-            take += remove;
-        }
-
-        w[Rock] += take;
     }
 
     static float Band(float h, float in0, float in1, float out0, float out1)
@@ -151,17 +130,6 @@ public class TerrainBiomePainter : MonoBehaviour
         float h01 = map.Heights[z1, x0];
         float h11 = map.Heights[z1, x1];
         return Mathf.Lerp(Mathf.Lerp(h00, h10, tx), Mathf.Lerp(h01, h11, tx), tz);
-    }
-
-    static float SampleSlope(HeightMapData map, float u, float v)
-    {
-        const float eps = 0.01f;
-        float h = SampleHeightBilinear(map, u, v);
-        float hx = SampleHeightBilinear(map, Mathf.Clamp01(u + eps), v);
-        float hz = SampleHeightBilinear(map, u, Mathf.Clamp01(v + eps));
-        float dx = (hx - h) / eps;
-        float dz = (hz - h) / eps;
-        return Mathf.Clamp01(Mathf.Sqrt(dx * dx + dz * dz));
     }
 
     TerrainLayer[] EnsureLayers(TerrainData data)
